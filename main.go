@@ -12,6 +12,97 @@ import (
 	"time"
 )
 
+// Pricing constants
+const (
+	BASE_PRICE_PER_SQFT = 0.12 // Base price per square foot in thousands
+	BEDROOM_BONUS       = 30.0 // Value added per bedroom in thousands
+	BATHROOM_BONUS      = 20.0 // Value added per bathroom in thousands
+)
+
+// Age related constants
+const (
+	AGE_DISCOUNT_RATE     = 0.005 // Rate at which age reduces value (0.5% per year)
+	MAX_AGE_DISCOUNT      = 0.3   // Maximum discount due to age (30%)
+	RENOVATION_BONUS_MAX  = 0.1   // Maximum bonus for recent renovation (10%)
+)
+
+// Feature premium constants
+const (
+	BASEMENT_PREMIUM    = 1.05 // +5% for basement
+	POOL_PREMIUM        = 1.07 // +7% for pool
+	FIREPLACE_PREMIUM   = 1.03 // +3% for fireplace
+	CENTRAL_AIR_PREMIUM = 1.04 // +4% for central air
+)
+
+// Quality adjustment constants
+const (
+	MIN_CONDITION_FACTOR   = 0.85  // Base factor for condition score
+	CONDITION_FACTOR_RATE  = 0.03  // Rate at which condition score improves value
+	SCHOOL_RATING_MIDPOINT = 5     // Midpoint for school ratings
+	SCHOOL_FACTOR_RATE     = 0.02  // Rate at which school rating affects value
+	CRIME_MIDPOINT         = 5.0   // Midpoint for crime rate
+	CRIME_FACTOR_RATE      = 0.01  // Rate at which crime affects value
+	AVG_LOT_SIZE           = 0.5   // Average lot size in acres
+	LOT_SIZE_FACTOR_RATE   = 0.1   // Rate at which lot size affects value
+)
+
+// Normal variation constants
+const (
+	NORMAL_PRICE_MIN       = 0.9  // Minimum random price multiplier (90%)
+	NORMAL_PRICE_VAR       = 0.2  // Price variation range (up to +20%)
+	OUTLIER_CHANCE         = 0.05 // 5% chance of an outlier
+	OUTLIER_FEATURE_CHANCE = 0.3  // 30% chance of outlier having unusual feature
+)
+
+// Tax related constants
+const (
+	MIN_TAX_RATE = 0.01 // Minimum property tax rate
+	MAX_TAX_RATE = 0.02 // Maximum property tax rate
+)
+
+// Home age related constants
+const (
+	MIN_AGE            = 0  // Minimum home age
+	MAX_AGE            = 70 // Maximum typical home age
+	HISTORIC_HOME_MIN  = 1900 // Minimum year for historic homes
+	HISTORIC_HOME_RANGE = 50  // Range of years for historic homes
+)
+
+// Home feature thresholds
+const (
+	SMALL_HOME_SQFT    = 1200 // Threshold for small homes
+	MEDIUM_HOME_SQFT   = 2000 // Threshold for medium homes
+	SMALL_HOME_MIN_SQFT = 900  // Minimum square footage for normal homes
+	SMALL_HOME_RANGE   = 1300 // Range of square footage for normal homes
+	
+	SMALL_OUTLIER_MIN  = 500  // Minimum square footage for small outliers
+	SMALL_OUTLIER_RANGE = 600 // Range for small outliers
+	LARGE_OUTLIER_MIN  = 2500 // Minimum square footage for large outliers
+	LARGE_OUTLIER_RANGE = 1500 // Range for large outliers
+)
+
+// Probability constants
+const (
+	CENTRAL_AIR_BASE_PROB = 0.95 // Base probability of central air
+	CENTRAL_AIR_AGE_FACTOR = 0.01 // How much age reduces central air probability
+	CENTRAL_AIR_MIN_PROB = 0.5    // Minimum probability of central air
+	
+	BASEMENT_BASE_PROB = 0.3     // Base probability of basement
+	BASEMENT_AGE_FACTOR = 0.01   // How much age increases basement probability
+	BASEMENT_SQFT_FACTOR = 0.0002 // How much square footage increases basement probability
+	BASEMENT_MAX_PROB = 0.9      // Maximum probability of basement
+	
+	POOL_BASE_PROB = 0.05       // Base probability of pool
+	POOL_PRICE_FACTOR = 0.1     // How neighborhood price affects pool probability
+	POOL_SQFT_FACTOR = 0.0001   // How square footage affects pool probability
+	POOL_MAX_PROB = 0.5         // Maximum probability of pool
+	
+	FIREPLACE_BASE_PROB = 0.2     // Base probability of fireplace
+	FIREPLACE_AGE_FACTOR = 0.005  // How age affects fireplace probability
+	FIREPLACE_SQFT_FACTOR = 0.0002 // How square footage affects fireplace probability
+	FIREPLACE_MAX_PROB = 0.8      // Maximum probability of fireplace
+)
+
 func main() {
 	// Define command line flags
 	numEntries := flag.Int("n", 100, "number of entries to generate")
@@ -163,7 +254,7 @@ func main() {
 	// Generate and write data rows
 	for i := 0; i < *numEntries; i++ {
 		// Decide if this entry will be an outlier (approximately 5% chance)
-		isOutlier := rand.Float64() < 0.05
+		isOutlier := rand.Float64() < OUTLIER_CHANCE
 
 		// Select neighborhood
 		neighborhood := neighborhoods[rand.Intn(len(neighborhoods))]
@@ -173,13 +264,13 @@ func main() {
 		if isOutlier {
 			// Outlier square footage: very small or very large
 			if rand.Float64() < 0.5 {
-				squareFootage = rand.Intn(600) + 500 // Small: 500-1100 sq ft
+				squareFootage = rand.Intn(SMALL_OUTLIER_RANGE) + SMALL_OUTLIER_MIN // Small: 500-1100 sq ft
 			} else {
-				squareFootage = rand.Intn(1500) + 2500 // Large: 2500-4000 sq ft
+				squareFootage = rand.Intn(LARGE_OUTLIER_RANGE) + LARGE_OUTLIER_MIN // Large: 2500-4000 sq ft
 			}
 		} else {
 			// Normal range: 900-2200 sq ft
-			squareFootage = rand.Intn(1300) + 900
+			squareFootage = rand.Intn(SMALL_HOME_RANGE) + SMALL_HOME_MIN_SQFT
 		}
 
 		// Generate number of bedrooms based on square footage
@@ -193,9 +284,9 @@ func main() {
 			}
 		} else {
 			// Normal relationship between square footage and bedrooms
-			if squareFootage < 1000 {
+			if squareFootage < SMALL_HOME_SQFT {
 				bedrooms = rand.Intn(2) + 1 // 1-2 bedrooms for small houses
-			} else if squareFootage < 1500 {
+			} else if squareFootage < MEDIUM_HOME_SQFT {
 				bedrooms = rand.Intn(2) + 2 // 2-3 bedrooms for medium houses
 			} else if squareFootage < 2000 {
 				bedrooms = rand.Intn(2) + 3 // 3-4 bedrooms for larger houses
@@ -206,7 +297,7 @@ func main() {
 
 		// Generate bathrooms based on bedrooms and square footage
 		var bathrooms float64
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			// Outlier bathrooms
 			if rand.Float64() < 0.5 {
 				bathrooms = 1.0 // Unusually few bathrooms
@@ -226,10 +317,10 @@ func main() {
 
 		// Year built and age
 		var yearBuilt, age, renovationAge int
-		ageRange := [2]int{0, 70} // Most homes 0-70 years old
-		if isOutlier && rand.Float64() < 0.3 {
+		ageRange := [2]int{MIN_AGE, MAX_AGE} // Most homes 0-70 years old
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			// Some outliers are historic homes
-			yearBuilt = rand.Intn(50) + 1900 // Built between 1900-1950
+			yearBuilt = rand.Intn(HISTORIC_HOME_RANGE) + HISTORIC_HOME_MIN // Built between 1900-1950
 		} else {
 			yearBuilt = currentYear - rand.Intn(ageRange[1]-ageRange[0]+1) - ageRange[0]
 		}
@@ -238,7 +329,7 @@ func main() {
 		// Renovation age (years since last major renovation)
 		if age < 5 {
 			renovationAge = 0 // New homes don't need renovation
-		} else if isOutlier && rand.Float64() < 0.3 {
+		} else if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			renovationAge = age // Never renovated
 		} else {
 			// Most homes are renovated every 10-30 years
@@ -247,7 +338,7 @@ func main() {
 
 		// Lot size in acres (0.1 to 1.0 typical)
 		lotSize := 0.1 + rand.Float64()*0.9
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			// Some outliers have very large lots
 			lotSize = 1.0 + rand.Float64()*9.0 // 1-10 acres
 		}
@@ -257,7 +348,7 @@ func main() {
 
 		// Garage spaces
 		var garageSpaces int
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			// Outlier garages
 			if rand.Float64() < 0.5 {
 				garageSpaces = 0 // No garage
@@ -266,9 +357,9 @@ func main() {
 			}
 		} else {
 			// Normal distribution of garage spaces based on house size
-			if squareFootage < 1200 {
+			if squareFootage < SMALL_HOME_SQFT {
 				garageSpaces = rand.Intn(2) // 0-1 spaces for small houses
-			} else if squareFootage < 2000 {
+			} else if squareFootage < MEDIUM_HOME_SQFT {
 				garageSpaces = 1 + rand.Intn(2) // 1-2 spaces for medium houses
 			} else {
 				garageSpaces = 2 + rand.Intn(2) // 2-3 spaces for large houses
@@ -277,7 +368,7 @@ func main() {
 
 		// Total rooms (including bedrooms, excluding bathrooms)
 		var rooms int
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			// Outlier room count
 			if rand.Float64() < 0.5 {
 				rooms = bedrooms + 1 // Minimal other rooms
@@ -291,11 +382,11 @@ func main() {
 
 		// Half baths
 		var halfBaths int
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			halfBaths = rand.Intn(4) // 0-3 half baths
 		} else {
 			// Typically 0-2 half baths
-			if squareFootage < 1500 {
+			if squareFootage < SMALL_HOME_SQFT {
 				halfBaths = rand.Intn(2) // 0-1 for smaller homes
 			} else {
 				halfBaths = rand.Intn(3) // 0-2 for larger homes
@@ -304,7 +395,7 @@ func main() {
 
 		// Number of stories
 		var stories float64
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			// Outlier stories
 			if rand.Float64() < 0.5 {
 				stories = 1.0 // Single story despite large size
@@ -313,9 +404,9 @@ func main() {
 			}
 		} else {
 			// Normal distribution based on size
-			if squareFootage < 1200 {
+			if squareFootage < SMALL_HOME_SQFT {
 				stories = 1.0 // Single story for smaller homes
-			} else if squareFootage < 2000 {
+			} else if squareFootage < MEDIUM_HOME_SQFT {
 				if rand.Float64() < 0.7 {
 					stories = 2.0 // Two stories most common for medium homes
 				} else {
@@ -338,13 +429,13 @@ func main() {
 		var basement, pool, fireplace, centralAir int
 
 		// Basement more common in older homes and certain neighborhoods
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			basement = rand.Intn(2) // Random for outliers
 		} else {
 			// More likely in older homes or larger homes
-			basementProb := 0.3 + 0.01*float64(age) + 0.0002*float64(squareFootage)
-			if basementProb > 0.9 {
-				basementProb = 0.9
+			basementProb := BASEMENT_BASE_PROB + BASEMENT_AGE_FACTOR*float64(age) + BASEMENT_SQFT_FACTOR*float64(squareFootage)
+			if basementProb > BASEMENT_MAX_PROB {
+				basementProb = BASEMENT_MAX_PROB
 			}
 			if rand.Float64() < basementProb {
 				basement = 1
@@ -352,12 +443,12 @@ func main() {
 		}
 
 		// Pool more common in expensive neighborhoods
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			pool = rand.Intn(2) // Random for outliers
 		} else {
-			poolProb := 0.05 + 0.1*neighborhood.avgPrice + 0.0001*float64(squareFootage)
-			if poolProb > 0.5 {
-				poolProb = 0.5 // Pools are somewhat rare
+			poolProb := POOL_BASE_PROB + POOL_PRICE_FACTOR*neighborhood.avgPrice + POOL_SQFT_FACTOR*float64(squareFootage)
+			if poolProb > POOL_MAX_PROB {
+				poolProb = POOL_MAX_PROB // Pools are somewhat rare
 			}
 			if rand.Float64() < poolProb {
 				pool = 1
@@ -365,12 +456,12 @@ func main() {
 		}
 
 		// Fireplace more common in older homes and larger homes
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			fireplace = rand.Intn(2) // Random for outliers
 		} else {
-			fireplaceProb := 0.2 + 0.005*float64(age) + 0.0002*float64(squareFootage)
-			if fireplaceProb > 0.8 {
-				fireplaceProb = 0.8
+			fireplaceProb := FIREPLACE_BASE_PROB + FIREPLACE_AGE_FACTOR*float64(age) + FIREPLACE_SQFT_FACTOR*float64(squareFootage)
+			if fireplaceProb > FIREPLACE_MAX_PROB {
+				fireplaceProb = FIREPLACE_MAX_PROB
 			}
 			if rand.Float64() < fireplaceProb {
 				fireplace = 1
@@ -378,12 +469,12 @@ func main() {
 		}
 
 		// Central air more common in newer homes
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			centralAir = rand.Intn(2) // Random for outliers
 		} else {
-			centralAirProb := 0.95 - 0.01*float64(age)
-			if centralAirProb < 0.5 {
-				centralAirProb = 0.5 // Even old homes may have central air added
+			centralAirProb := CENTRAL_AIR_BASE_PROB - CENTRAL_AIR_AGE_FACTOR*float64(age)
+			if centralAirProb < CENTRAL_AIR_MIN_PROB {
+				centralAirProb = CENTRAL_AIR_MIN_PROB // Even old homes may have central air added
 			}
 			if rand.Float64() < centralAirProb {
 				centralAir = 1
@@ -428,7 +519,7 @@ func main() {
 
 		// Condition score (1-10)
 		var conditionScore int
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			conditionScore = rand.Intn(11) // 0-10 for outliers
 		} else {
 			// Better condition for newer homes or recently renovated homes
@@ -447,7 +538,7 @@ func main() {
 
 		// Energy efficiency (1-10)
 		var energyEfficiency int
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			energyEfficiency = rand.Intn(11) // 0-10 for outliers
 		} else {
 			// Better efficiency for newer homes
@@ -476,7 +567,7 @@ func main() {
 		var hoaFees float64
 		hoaRange := neighborhood.hoaRange
 		hoaFees = hoaRange[0] + rand.Float64()*(hoaRange[1]-hoaRange[0])
-		if isOutlier && rand.Float64() < 0.3 {
+		if isOutlier && rand.Float64() < OUTLIER_FEATURE_CHANCE {
 			// Some outliers have very high or zero HOA
 			if rand.Float64() < 0.5 {
 				hoaFees = 0 // No HOA
@@ -485,16 +576,10 @@ func main() {
 			}
 		}
 
-		// Generate price based on all factors
-		// Base price factor: about $120 per sq ft + $30k per bedroom + $20k per bathroom
-		basePricePerSqFt := 0.12
-		bedroomBonus := 30.0
-		bathroomBonus := 20.0
-
 		// Calculate base price from main factors
-		basePrice := float64(squareFootage)*basePricePerSqFt +
-			float64(bedrooms)*bedroomBonus +
-			bathrooms*bathroomBonus
+		basePrice := float64(squareFootage)*BASE_PRICE_PER_SQFT +
+			float64(bedrooms)*BEDROOM_BONUS +
+			bathrooms*BATHROOM_BONUS
 
 		// Apply neighborhood factor
 		basePrice *= neighborhood.avgPrice
@@ -504,43 +589,43 @@ func main() {
 
 		// Adjust for age (newer houses worth more)
 		ageDiscount := 0.0
-		if float64(age)*0.005 < 0.3 {
-			ageDiscount = 1.0 - float64(age)*0.005
+		if float64(age)*AGE_DISCOUNT_RATE < MAX_AGE_DISCOUNT {
+			ageDiscount = 1.0 - float64(age)*AGE_DISCOUNT_RATE
 		} else {
-			ageDiscount = 1.0 - 0.3
+			ageDiscount = 1.0 - MAX_AGE_DISCOUNT
 		}
 		priceFactors *= ageDiscount
 
 		// Renovation reduces age penalty
 		if renovationAge < 10 {
-			priceFactors *= 1.0 + (0.1 * (1.0 - float64(renovationAge)/10.0))
+			priceFactors *= 1.0 + (RENOVATION_BONUS_MAX * (1.0 - float64(renovationAge)/10.0))
 		}
 
 		// Premium features
 		if basement == 1 {
-			priceFactors *= 1.05 // +5% for basement
+			priceFactors *= BASEMENT_PREMIUM
 		}
 		if pool == 1 {
-			priceFactors *= 1.07 // +7% for pool
+			priceFactors *= POOL_PREMIUM
 		}
 		if fireplace == 1 {
-			priceFactors *= 1.03 // +3% for fireplace
+			priceFactors *= FIREPLACE_PREMIUM
 		}
 		if centralAir == 1 {
-			priceFactors *= 1.04 // +4% for central air
+			priceFactors *= CENTRAL_AIR_PREMIUM
 		}
 
 		// Quality and condition adjustments
-		priceFactors *= 0.85 + float64(conditionScore)*0.03 // Up to +15% for condition
+		priceFactors *= MIN_CONDITION_FACTOR + float64(conditionScore)*CONDITION_FACTOR_RATE
 
 		// School rating premium
-		priceFactors *= 1.0 + float64(schoolRating-5)*0.02 // ±10% based on schools
+		priceFactors *= 1.0 + float64(schoolRating-SCHOOL_RATING_MIDPOINT)*SCHOOL_FACTOR_RATE
 
 		// Crime rate discount
-		priceFactors *= 1.0 - (crimeRate-5.0)*0.01 // ±5% based on crime
+		priceFactors *= 1.0 - (crimeRate-CRIME_MIDPOINT)*CRIME_FACTOR_RATE
 
 		// Lot size premium
-		priceFactors *= 1.0 + (lotSize-0.5)*0.1 // Bigger lots worth more
+		priceFactors *= 1.0 + (lotSize-AVG_LOT_SIZE)*LOT_SIZE_FACTOR_RATE
 
 		// Apply factors to base price
 		price := basePrice * priceFactors
@@ -556,11 +641,11 @@ func main() {
 			}
 		} else {
 			// Add some normal variation (90%-110% of expected)
-			price = price * (0.9 + rand.Float64()*0.2)
+			price = price * (NORMAL_PRICE_MIN + rand.Float64()*NORMAL_PRICE_VAR)
 		}
 
 		// Calculate taxes based on final price (1-2% of home value)
-		taxRate := 0.01 + rand.Float64()*0.01
+		taxRate := MIN_TAX_RATE + rand.Float64()*(MAX_TAX_RATE-MIN_TAX_RATE)
 		taxes = price * taxRate
 
 		// Round price to nearest thousand
