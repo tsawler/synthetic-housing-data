@@ -106,9 +106,6 @@ func main() {
 		}
 	}
 
-	// Initialize random number generator
-	initRandom()
-
 	// Create output file
 	file, err := os.Create(*outputFile)
 	if err != nil {
@@ -137,33 +134,33 @@ func main() {
 	for i := 0; i < *numEntries; i++ {
 		// Generate a housing entry
 		entry := generateHousingEntry(neighborhoods, currentYear)
-		
+
 		// Create a complete data row with all features
 		allDataValues := []string{
-			strconv.Itoa(entry.Age),                      // age
-			strconv.Itoa(entry.Basement),                 // basement
-			fmt.Sprintf("%.1f", entry.Bathrooms),         // bathrooms
-			strconv.Itoa(entry.Bedrooms),                 // bedrooms
-			strconv.Itoa(entry.CentralAir),               // central_air
-			strconv.Itoa(entry.ConditionScore),           // condition_score
-			fmt.Sprintf("%.1f", entry.CrimeRate),         // crime_rate
-			fmt.Sprintf("%.1f", entry.DistanceDowntown),  // distance_downtown
-			strconv.Itoa(entry.EnergyEfficiency),         // energy_efficiency
-			strconv.Itoa(entry.Fireplace),                // fireplace
-			strconv.Itoa(entry.GarageSpaces),             // garage_spaces
-			strconv.Itoa(entry.HalfBaths),                // half_baths
-			fmt.Sprintf("%.0f", entry.HoaFees),           // hoa_fees
-			fmt.Sprintf("%.2f", entry.LotSize),           // lot_size
-			entry.Neighborhood.Name,                      // neighborhood
-			strconv.Itoa(entry.Pool),                     // pool
-			strconv.Itoa(entry.PropertyArea),             // property_area
-			strconv.Itoa(entry.RenovationAge),            // renovation_age
-			strconv.Itoa(entry.Rooms),                    // rooms
-			strconv.Itoa(entry.SchoolRating),             // school_rating
-			strconv.Itoa(entry.SquareFootage),            // square_footage
-			fmt.Sprintf("%.1f", entry.Stories),           // stories
-			fmt.Sprintf("%.0f", entry.Taxes),             // taxes
-			strconv.Itoa(entry.WalkabilityScore),         // walkability_score
+			strconv.Itoa(entry.Age),                     // age
+			strconv.Itoa(entry.Basement),                // basement
+			fmt.Sprintf("%.1f", entry.Bathrooms),        // bathrooms
+			strconv.Itoa(entry.Bedrooms),                // bedrooms
+			strconv.Itoa(entry.CentralAir),              // central_air
+			strconv.Itoa(entry.ConditionScore),          // condition_score
+			fmt.Sprintf("%.1f", entry.CrimeRate),        // crime_rate
+			fmt.Sprintf("%.1f", entry.DistanceDowntown), // distance_downtown
+			strconv.Itoa(entry.EnergyEfficiency),        // energy_efficiency
+			strconv.Itoa(entry.Fireplace),               // fireplace
+			strconv.Itoa(entry.GarageSpaces),            // garage_spaces
+			strconv.Itoa(entry.HalfBaths),               // half_baths
+			fmt.Sprintf("%.0f", entry.HoaFees),          // hoa_fees
+			fmt.Sprintf("%.2f", entry.LotSize),          // lot_size
+			entry.Neighborhood.Name,                     // neighborhood
+			strconv.Itoa(entry.Pool),                    // pool
+			strconv.Itoa(entry.PropertyArea),            // property_area
+			strconv.Itoa(entry.RenovationAge),           // renovation_age
+			strconv.Itoa(entry.Rooms),                   // rooms
+			strconv.Itoa(entry.SchoolRating),            // school_rating
+			strconv.Itoa(entry.SquareFootage),           // square_footage
+			fmt.Sprintf("%.1f", entry.Stories),          // stories
+			fmt.Sprintf("%.0f", entry.Taxes),            // taxes
+			strconv.Itoa(entry.WalkabilityScore),        // walkability_score
 		}
 
 		// Create a new row with only the selected features

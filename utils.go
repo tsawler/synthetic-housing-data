@@ -1,14 +1,8 @@
 package main
 
 import (
-	"math/rand"
 	"time"
 )
-
-// initRandom initializes the random number generator with current time
-func initRandom() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 // getCurrentYear returns the current year as an integer
 func getCurrentYear() int {
